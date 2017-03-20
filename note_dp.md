@@ -146,5 +146,297 @@ c.Count(*)
 2. 无法排序或者交换
 3. 如果是所有方案列出来，一定不是动态规划。
 
+### 四要素
+1.状态 State
+灵感，创造力，存储小规模问题的结果
+2. 方程 Function
+状态之间的联系，怎么通过小的状态，来算大的状态
+3. 初始化 Intialization
+最极限的小状态是什么, 起点
+4. 答案 Answer
+最大的那个状态是什么，终点
 
+### 四种类型
+1. Matrix DP (10%)
+2. Sequence (40%)
+3. Two Sequences DP (40%)
+4. Backpack (10%)
+
+### 1. Matrix DP
+state: f[x][y] 表示我从起点走到坐标x,y……
+function: 研究走到x,y这个点之前的一步
+intialize: 起点
+answer: 终点
+总结如下：
+```
+state: f[x][y]从起点走到x,y的最短路径
+function: f[x][y] = min(f[x-1][y], f[x][y-1]) + A
+[x][y]
+intialize: f[0][0] = A[0][0]
+// f[i][0] = sum(0,0 -> i,0)
+// f[0][i] = sum(0,0 -> 0,i)
+answer: f[n-1][m-1]
+```
+
+```
+func minPathSum(grid [][]int) int {
+    if grid==nil||len(grid)==0||len(grid[0])==0{
+        return 0
+    }
+   
+    row:=len(grid)
+    col:=len(grid[0])
+    fn:=make([][]int,row) //正确的初始化二维队列的方法
+     for i:=0;i<row;i++{
+         line:=make([]int,col)
+         fn[i]=line
+     }
+    //init
+    /*错误,要累加起来
+    fn[0]=grid[0]
+    
+    for i:=1;i<row;i++{
+        fn[i]=make([]int,col)
+        fn[i][0]=grid[i][0]
+    }
+    */
+    //正确的方式
+    fn[0][0]=grid[0][0]
+    for i:=1;i<row;i++{
+        fn[i][0]=fn[i-1][0]+grid[i][0]     //累加的方法
+    }
+    for i:=1;i<col;i++{
+        fn[0][i]=fn[0][i-1]+grid[0][i]
+    }
+    
+    
+    
+    for i:=1;i<row;i++{
+        for j:=1;j<col;j++{
+            fn[i][j]=min(fn[i][j-1],fn[i-1][j])+grid[i][j]
+        }
+    }
+    
+    return fn[row-1][col-1]
+}
+
+func min(x,y int) int{
+    if x<y{
+        return x
+    }else{
+        return y
+    }
+}
+
+```
+
+#### unique path
+URL:https://leetcode.com/problems/unique-paths/#/description
+function: fn(i,j)=fn(i-1,j)+fn(i,j-1)
+一把过
+
+init:横竖都是1
+```
+func uniquePaths(m int, n int) int {
+    sum:=make([][]int,m)
+    for i:=0;i<m;i++{
+        sum[i]=make([]int,n)
+        sum[i][0]=1
+        
+    }
+    for i:=0;i<n;i++{
+        sum[0][i]=1
+    }
+    
+    for i:=1;i<m;i++{
+        for j:=1;j<n;j++{
+            sum[i][j]=sum[i-1][j]+sum[i][j-1]
+        }
+    }
+    
+    return sum[m-1][n-1]
+}
+
+```
+
+#### Unique path 2
+URL:
+
+```
+func uniquePathsWithObstacles(obstacleGrid [][]int) int {
+    if obstacleGrid==nil{
+        return 0
+    }
+    m:=len(obstacleGrid)
+    n:=len(obstacleGrid[0])
+    
+    sum:=make([][]int,m)
+    line:=make([]int,n)
+    sum[0]=line
+    if obstacleGrid[0][0]==1{  //自己为1，则为不对
+        return 0
+    }
+
+    //初始化一定做好
+    sum[0][0]=1
+    
+    for i:=1;i<m;i++{
+        sum[i]=make([]int,n)
+
+        if obstacleGrid[i][0]!=1{
+            sum[i][0]=sum[i-1][0]
+        }else{
+            sum[i][0]=0
+        }
+        
+        
+    }
+    for i:=1;i<n;i++{
+        if obstacleGrid[0][i]!=1{
+            sum[0][i]=sum[0][i-1]
+        }else{
+            sum[0][i]=0
+        }
+    }
+
+
+    
+    for i:=1;i<m;i++{
+        for j:=1;j<n;j++{
+            if obstacleGrid[i][j]!=1{
+                sum[i][j]=sum[i-1][j]+sum[i][j-1]
+            }else{
+                sum[i][j]=0
+            }
+            
+            
+        }
+    }
+    
+    return sum[m-1][n-1]
+}
+```
+
+### 2. Sequence Dp
+state: f[i]表示“前i”个位置/数字/字母,(以第i个为)... 
+
+**前5个是怎么样的，前2个是怎么样的，前3个是怎么样的。**
+
+function: f[i] = f[j] … j 是i之前的一个位置
+intialize: f[0]..
+answer: f[n-1]..
+
+#### 爬梯子
+题目：
+URL:https://leetcode.com/problems/climbing-stairs/#/description
+
+You are climbing a stair case. It takes n steps to reach to the top.
+
+Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?
+
+Note: Given n will be a positive integer.
+
+```
+func climbStairs(n int) int {
+    if n<=0{
+        return 0
+    }
+    if n==1{
+        return 1
+    }
+    fn:=make([]int,n)
+    fn[0]=1
+    fn[1]=2
+    for i:=2;i<n;i++{
+        fn[i]=fn[i-1]+fn[i-2]
+    }
+    return fn[n-1]
+}
+```
+
+### jump games
+
+描述：
+url:https://leetcode.com/problems/jump-game/#/description
+
+Given an array of non-negative integers, you are initially positioned at the first index of the array.
+
+Each element in the array represents your maximum jump length at that position.
+
+Determine if you are able to reach the last index.
+
+For example:
+A = [2,3,1,1,4], return true.
+
+A = [3,2,1,0,4], return false.
+
+```
+func canJump(nums []int) bool {
+    if nums==nil{
+        return false
+    }
+    hash:=make([]int,len(nums))
+    
+    hash[0]=1   //1.需要关注的点
+    
+    for i,num:=range nums{
+        if hash[i]==0{
+            continue
+        }
+        for j:=1;j<num+1;j++{
+          if i+j>=len(nums){
+              break //一定要加,越界了
+          }
+           hash[i+j]=1
+        }
+    }
+    if hash[len(nums)-1]==1{
+        return true
+    }
+    return false
+}
+
+```
+
+### lis
+
+Longest Increasing Subsequence
+state:
+错误的方法: f[i]表示前i个数字中最长的LIS的长度
+正确的方法: f[i]表示前i个数字中以第i个结尾的LIS的长
+度
+function: f[i] = MAX{f[j]+1}, j < i && a[j] <= a
+[i])
+intialize: f[0..n-1] = 1
+answer: max(f[0..n-1])
+```
+func lengthOfLIS(nums []int) int {
+    size:=len(nums)
+    record:=make([]int,len(nums))
+    for i:=0;i<size;i++{
+        record[i]=1
+    }
+    
+    for i:=0;i<size;i++{
+        for j:=0;j<i;j++{
+            if nums[i]>nums[j]{
+                if record[i]<record[j]+1{ //一定要加这个判断,少了这个判断就跪了
+                    record[i]=record[j]+1
+                }
+                
+            }
+        }
+    }
+    max:=0
+    for i:=0;i<size;i++{
+        if max<record[i]{
+            max=record[i]
+        }
+    }
+    
+    return max
+    
+}
+
+```
 
